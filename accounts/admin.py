@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User
+from .models import User, Token
 from django.contrib.auth.admin import UserAdmin
 
 class CustomUserAdmin(UserAdmin):
@@ -15,7 +15,7 @@ class CustomUserAdmin(UserAdmin):
     # Fieldsets for the add/edit user page
     fieldsets = (
         (None, {'fields': ('email', 'username', 'password')}),
-        ('Permissions', {'fields': ('is_admin', 'is_staff', 'is_active', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Permissions', {'fields': ('is_admin', 'is_staff', 'is_active','is_verified', 'is_superuser', 'groups', 'user_permissions')}),
         ('Profile', {'fields': ('profile_picture',)}),
     )
 
@@ -23,7 +23,7 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'username', 'password1', 'password2', 'is_admin', 'is_staff', 'is_active'),
+            'fields': ('email', 'username', 'password1', 'password2', 'is_admin', 'is_staff', 'is_active', 'is_verified'),
         }),
     )
 
@@ -31,3 +31,4 @@ class CustomUserAdmin(UserAdmin):
     ordering = ('email',)
 
 admin.site.register(User, CustomUserAdmin)
+admin.site.register(Token)
