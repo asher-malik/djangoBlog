@@ -1,0 +1,177 @@
+{% load static %}
+
+{% include 'includes/header.html' %}
+
+{% block content %}
+<style>
+    .form-control:focus {
+        box-shadow: none;
+    }
+
+    .labels {
+        font-size: 11px;
+    }
+
+    .add-experience:hover {
+        background: #BA68C8;
+        color: #fff;
+        cursor: pointer;
+        border: solid 1px #BA68C8;
+    }
+
+    /* Hover effect for profile picture */
+    .profile-picture-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .profile-picture-container:hover .profile-picture-overlay {
+        display: block;
+    }
+
+    .profile-picture-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        display: none;
+        cursor: pointer;
+    }
+
+    .profile-picture-overlay span {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 14px;
+    }
+</style>
+
+<div class="container rounded bg-white mt-5 mb-5">
+    <div class="row">
+        {% include 'includes/alerts.html' %}
+        <div class="col-md-3 border-right">
+            <div class="d-flex flex-column align-items-center text-center p-3 py-5">
+                <div class="profile-picture-container">
+                    <img class="rounded-circle mt-5" width="150px" src="{{ request.user.profile_picture.url }}" id="profile-picture">
+                    <div class="profile-picture-overlay" onclick="document.getElementById('profile-picture-input').click()">
+                        <span>Change</span>
+                    </div>
+                </div>
+                <span class="font-weight-bold">{{ request.user.username }}</span>
+                <span class="text-black-50">{{ request.user.email }}</span>
+            </div>
+        </div>
+        <div class="col-md-5 border-right">
+            <div class="p-3 py-5">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="text-right">Profile Settings</h4>
+                </div>
+                <form method="post" enctype="multipart/form-data" action="{% url 'view_account' %}">
+                    {% csrf_token %}
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <label class="labels">Username</label>
+                            <input type="text" class="form-control" placeholder="username" value="{{ request.user.username }}" id="username-input" name="username">
+                            <small id="username-feedback" class="form-text text-muted"></small>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="labels">Email (readonly)</label>
+                            <input type="email" class="form-control" placeholder="email" value="{{ request.user.email }}" readonly>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <h4 class="text-right">Change Password</h4>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <label class="labels">Current Password</label>
+                            <input type="password" class="form-control" placeholder="Enter current password" name="current_password">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="labels">New Password</label>
+                            <input type="password" class="form-control" placeholder="Enter new password" name="new_password" id="password">
+                            <small id="password-feedback" class="form-text text-muted"></small>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="labels">Confirm New Password</label>
+                            <input type="password" class="form-control" placeholder="Enter new password" name="new_password2" id="password2">
+                            <small id="confirm-password-feedback" class="form-text text-muted"></small>
+                        </div>
+                    </div>
+                    <div class="mt-5 text-center">
+                        <button class="btn btn-primary profile-button" type="submit" id="submit-button">Save Profile</button>
+                    </div>
+                    <!-- Hidden file input for profile picture -->
+                    <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*" style="display: none;">
+                </form>
+                <!-- Delete Account Button -->
+                <div class="mt-5 text-center">
+                    <button class="btn btn-danger profile-button" type="button" id="delete-button" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                        Delete Account
+                    </button>
+                </div>
+
+                <!-- Bootstrap Modal -->
+                <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteAccountModalLabel">Confirm Account Deletion</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Are you sure you want to delete your account? This action is irreversible.
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-danger" id="confirm-delete">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Preview the selected image
+    document.getElementById('profile-picture-input').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('profile-picture').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    document.getElementById("confirm-delete").addEventListener("click", function() {
+    fetch("{% url 'delete_account' %}", {
+        method: "DELETE",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"), // Include CSRF token
+            "Content-Type": "application/json"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.redirect_url) {
+            window.location.href = data.redirect_url; // Redirect to home page
+        } else {
+            alert("Error deleting account.");
+        }
+    })
+    .catch(error => console.error("Error:", error));
+});
+
+</script>
+{% endblock %}
+
+{% include 'includes/footer.html' %}
